@@ -1,4 +1,5 @@
 local sqrt = math.sqrt 
+local floor = math.floor 
 INFINITY = 0x3f3f3f3f
 
 ---------------------------------------------------------------------------
@@ -19,6 +20,14 @@ end
 ---------------------------------------------------------------------------
 -- Get the distance between 2 rigs
 
+function distanceSqXY( ax, ay, bx, by )
+	return (ax-bx)*(ax-bx) + (ay-by)*(ay-by)
+end
+
+function distanceXY( ax, ay, bx, by )
+	return sqrt( distanceSqXY( ax, ay, bx, by ) )
+end
+
 function distanceSq( A, B )
 	local ax, ay = A:getLoc()
 	local bx, by = B:getLoc()
@@ -27,6 +36,26 @@ end
 
 function distance( A, B )
 	return sqrt( distanceSq( A, B ) )
+end
+
+
+---------------------------------------------------------------------------
+--- Binary search through a sorted array 
+function binSearch( array, value, first, last )
+	first = first or 1
+	last = last or table.getn(array)
+	local mid = 0
+	local res = 0
+	while (first <= last) do
+		mid = floor((first+last)/2)
+		if array[mid] > value then
+			last = mid-1
+		else
+			res = mid
+			first = mid+1
+		end
+	end
+	return res, array[res]
 end
 
 ---------------------------------------------------------------------------
