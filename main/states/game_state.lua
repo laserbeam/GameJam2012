@@ -16,8 +16,8 @@ function makePathHolder()
 		local len = table.getn( self.pathXY )
 		if len > 1 then
 			local oldx, oldy = self.pathXY[len-1], self.pathXY[len]
-			local d = distanceXY( oldx, oldy, x, y )
-			if d>6 then
+			local d = distanceXY( oldx, oldy, x, y ) -- That's the squared distance... faster to calculate
+			if d>5 then
 				local aux = self.lengths[ table.getn(self.lengths) ]
 				table.insert( self.lengths, d + aux )
 				table.insert( self.pathXY, x )
@@ -51,7 +51,7 @@ function makePathHolder()
 		local alpha = distance/total
 		local x, y = xb-xa, yb-ya
 		x, y = x*alpha, y*alpha
-		return xa+x, ya+y
+		return xa+x, ya+y, 0
 	end
 
 	scriptDeck = MOAIScriptDeck.new()
@@ -109,7 +109,7 @@ function state:onInput()
 	elseif LRInputManager.up() then
 		self.pathHolder:finalizePath()
 		tDist = 0
-		speed = 2
+		speed = 5
 		isDrawing = false
 	end
 end
@@ -119,6 +119,7 @@ function state:onUpdate( time )
 		local x, y, angle = self.pathHolder:getXYAngleatDistance(tDist)
 		moving:setLoc( x, y )
 		tDist = tDist + speed
+		print (tDist)
 	end
 end
 
