@@ -38,7 +38,7 @@ function makePathHolder()
 		print (table.getn(self.pathXY), table.getn(self.lengths))
 	end
 
-	function pathHolder:getXYAngleatDistance( distance )
+	function pathHolder:getXYAngleAtDistance( distance )
 		if distance < 0 then distance = 0 end
 		local i, d = binSearch( self.lengths, distance )
 		if i == table.getn(self.lengths) then
@@ -50,8 +50,19 @@ function makePathHolder()
 		local total = self.lengths[i+1] - d
 		local alpha = distance/total
 		local x, y = xb-xa, yb-ya
+		local angle = 90
+		if x == 0 then
+			if y > 0 then
+				angle = 90
+			else
+				angle = -90
+			end 
+		else
+			angle=(math.atan(y/x)*180)/math.pi
+			if x<0 then angle = angle + 180 end 
+		end
 		x, y = x*alpha, y*alpha
-		return xa+x, ya+y, 0
+		return xa+x, ya+y, angle
 	end
 
 	scriptDeck = MOAIScriptDeck.new()
@@ -109,17 +120,19 @@ function state:onInput()
 	elseif LRInputManager.up() then
 		self.pathHolder:finalizePath()
 		tDist = 0
-		speed = 5
+		speed = 3
 		isDrawing = false
 	end
 end
 
 function state:onUpdate( time )
 	if not isDrawing then
-		local x, y, angle = self.pathHolder:getXYAngleatDistance(tDist)
+		local x, y, angle = self.pathHolder:getXYAngleAtDistance(tDist)
+		angle = angle or 0
 		moving:setLoc( x, y )
+		moving:setRot( angle+90 )
 		tDist = tDist + speed
-		print (tDist)
+		print (angle)
 	end
 end
 
