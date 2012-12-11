@@ -1,4 +1,5 @@
 require 'LRState'
+require 'components'
 require 'player'
 require 'enemies'
 require 'snake'
@@ -9,7 +10,7 @@ local abs = math.abs
 
 local state = LRState.new()
 
-function makePathHolder() 
+local function makePathHolder() 
 	
 	local pathHolder = {}
 	pathHolder.pathXY = {}
@@ -75,65 +76,18 @@ function makePathHolder()
 
 end
 
-
 isDrawing = false
-
---- Make a snake and place its props in the game state
-local function makeRunningSnake( state, length, config )
-	local theSnake = {}
-	theSnake.joints = {}
-	theSnake.mountedTurrets = {}
-	theSnake.jointSpacing = 20
-	theSnake.tDist = 0
-	theSnake.speed = 60
-
-	table.insert( theSnake.joints, makeSnakeHead() )
-	table.insert( theSnake.mountedTurrets, 0 )
-	for i=1,length do
-		table.insert( theSnake.joints, makeSnakeJoint() )
-		if i%3 == 2 then
-			table.insert( theSnake.mountedTurrets, makeSnakeTurret() )
-		else
-			table.insert( theSnake.mountedTurrets, 0 )
-		end
-	end
-	table.insert( theSnake.joints, makeSnakeTail() )
-	table.insert( theSnake.mountedTurrets, 0 )
-
-	for i,v in ipairs(theSnake.joints) do
-		state.objectLayer:insertProp(v.prop)
-	end
-	for i,v in ipairs(theSnake.mountedTurrets) do
-		if v ~= 0 then
-			state.objectLayer:insertProp(v.prop)
-		end
-	end
-
-	function theSnake:clear()
-		for i,v in ipairs(theSnake.joints) do
-			state.objectLayer:removeProp(v.prop)
-		end
-		for i,v in ipairs(theSnake.mountedTurrets) do
-			if v ~= 0 then
-				state.objectLayer:removeProp(v.prop)
-			end
-		end
-	end
-
-	if state.theSnake then state.theSnake.clear() end
-	state.theSnake = theSnake
-end
 
 --- Populates the state with enemies based on some level file
 --- but right now it just adds a couple turrets
 local function loadLevel( state, levelName )
 	state.enemies = {}
-	e = makeEnemyTurret( 20, 10, 10 )
+	e = makeEnemyTurret( 20, 7, 3 )
 	e.prop:setLoc( -200, -200 )
 	state.objectLayer:insertProp( e.prop )
 	state.enemies[e] = e
 
-	e = makeEnemyTurret( 20, 10, 10 )
+	e = makeEnemyTurret( 20, 7, 3 )
 	e.prop:setLoc( 100, 100 )
 	state.objectLayer:insertProp( e.prop )
 	state.enemies[e] = e
@@ -175,89 +129,61 @@ function state:onInput()
 	end
 end
 
-local function updateMovingSnake( scene, time )
-	if (not isDrawing) and scene.theSnake then
-		local dist = scene.theSnake.tDist
-		for i,v in ipairs(scene.theSnake.joints) do
-			local x, y, angle = scene.pathHolder:getXYAngleAtDistance(dist)
+local function updateMovingSnake( gameScene, time )
+	if (not isDrawing) and gameScene.theSnake then
+		local dist = gameScene.theSnake.tDist
+		for i,v in ipairs(gameScene.theSnake.joints) do
+			local x, y, angle = gameScene.pathHolder:getXYAngleAtDistance(dist)
 			angle = angle or 0
 			v.prop:setLoc( x, y )
 			v.prop:setRot( degree(angle)+90 )
-			if scene.theSnake.mountedTurrets[i] ~= 0 then
-				local t = scene.theSnake.mountedTurrets[i]
+			if gameScene.theSnake.mountedTurrets[i] then
+				local t = gameScene.theSnake.mountedTurrets[i]
 				t.prop:setLoc( x, y )
 				if t.target then
 					angle = angleFromXY( x, y, t.target.prop:getLoc() )
 				end
 				t.prop:setRot( degree(angle)+90 )
 			end
-			dist = dist - scene.theSnake.jointSpacing
+			dist = dist - gameScene.theSnake.jointSpacing
 		end
-		scene.theSnake.tDist = scene.theSnake.tDist + scene.theSnake.speed*time
+		gameScene.theSnake.tDist = gameScene.theSnake.tDist + gameScene.theSnake.speed*time
 	end
 end
 
-local function fire( scene, shooter, target )
-	local bullet = {}
-	bullet.prop = MOAIProp2D.new()
-	bullet.prop:setDeck( shooter.bulletDeck )
-	bullet.prop:setLoc( shooter.prop:getLoc() )
-	bullet.damage = shooter.damage
-	local speed = 200
-	local x, y = shooter.prop:getLoc()
-	local angle = angleFromXY( x, y, target.prop:getLoc() )
-	local time = LRStateManager.getTime()
-	bullet.dx = speed*time*cos(angle)
-	bullet.dy = speed*time*sin(angle)
-	bullet.prop:setRot( degree(angle)+90 )
 
-	-- bullet.delay = distance( shooter.prop, target.prop ) / speed
-	shooter:resetCooldown()
-	bullet.thread = MOAIThread:new()
-	scene.fgLayer:insertProp( bullet.prop )
-	bullet.thread:run (
-		function ()
-			local x, y = bullet.prop:getLoc()
-			local tx, ty = target.prop:getLoc()
-			while abs(tx-x) > abs(bullet.dx) and abs(ty-y) > abs(bullet.dy) do
-				coroutine.yield()
-				bullet.prop:moveLoc( bullet.dx, bullet.dy )
-				if target.isDead then 
-					scene.fgLayer:removeProp( bullet.prop )
-					return
-				end
-				x, y = bullet.prop:getLoc()
-				tx, ty = target.prop:getLoc()
-			end
-			scene.fgLayer:removeProp( bullet.prop )
-			target:applyDamage( bullet.damage )
-		end
-	)
-end
-
-local function updateSnakeTurrets( scene, time )
-	for i,turret in ipairs( scene.theSnake.mountedTurrets ) do
-		if turret ~= 0 then
+local function updateSnakeTurrets( gameScene, time )
+	for i, turret in pairs( gameScene.theSnake.mountedTurrets ) do
+		if turret.isDead then
+			gameScene.theSnake.mountedTurrets[i] = nil
+			gameScene.objectLayer:removeProp( turret.prop )
+		else
 			if turret.target then
 				if turret.target.isDead or distanceSq( turret.prop, turret.target.prop ) > turret.range * turret.range then
 					turret.target = nil
 				end
 			end
-			if not turret.target and scene.enemies then
-				for j,enemy in pairs( scene.enemies ) do
-					if distanceSq( turret.prop, enemy.prop ) <= turret.range * turret.range then
-						turret.target = enemy
-						break
-					end
-				end
+			if not turret.target and gameScene.enemies then
+				turret.target = pickTargetInRangeFromTable( turret, gameScene.enemies, turret.range )
 			end
 
 			-- If the turent has cooldown on its weapon, update it
 			if turret.updateCooldown then turret:updateCooldown( time ) end
 			if turret.cooldown <= 0 and turret.target then
-				fire( scene, turret, turret.target )
+				fire( gameScene, turret, turret.target, turret.bulletDeck )
 			end
+		end
+	end
+end
 
+local function updateEnemies( gameScene, time )
+	for _, e in pairs( gameScene.enemies ) do
+		if e.isDead then
+			print (e, " died... how sad")
+			gameScene.objectLayer:removeProp( e.prop )
+			gameScene.enemies[e] = nil
+		else
+			e:update( gameScene, time )
 		end
 	end
 end
@@ -267,13 +193,7 @@ function state:onUpdate( time )
 	if self.theSnake then
 		updateSnakeTurrets( self, time )
 	end
-	for i, e in pairs( self.enemies ) do
-		if e.isDead then
-			print (e, " died... how sad")
-			self.objectLayer:removeProp( e.prop )
-			self.enemies[e] = nil
-		end
-	end
+	updateEnemies( self, time )
 end
 
 function state:onUnload()

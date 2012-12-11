@@ -28,23 +28,23 @@ decks.bullet:setUVRect ( 0, 0, 1, 1 )
 
 
 function makeSnakeHead()
-	head = {}
+	head = makeUnit( 20 )
 	head.prop = MOAIProp2D.new()
-	head.prop:setDeck(decks.head)
+	head.prop:setDeck( decks.head )
 	return head
 end
 
 function makeSnakeJoint()
 	joint = {}
 	joint.prop = MOAIProp2D.new()
-	joint.prop:setDeck(decks.joint)
+	joint.prop:setDeck( decks.joint )
 	return joint
 end
 
 function makeSnakeTail()
 	tail = {}
 	tail.prop = MOAIProp2D.new()
-	tail.prop:setDeck(decks.tail)
+	tail.prop:setDeck( decks.tail )
 	return tail
 end
 
@@ -60,17 +60,8 @@ end
 -- 	self.target = nil
 -- end
 
-function updateCooldown( self, time )
-	self.cooldown = max( 0, self.cooldown - time )
-end
-
-function resetCooldown( self )
-	self.cooldown = self.maxCooldown
-end
-
 function makeSnakeTurret( health, damage, cooldown )
-	turret = {}
-	turret.health = health or 20
+	turret = makeUnit( health or 20 )
 	turret.maxHealth = turret.health
 	turret.damage = damage or 1
 	turret.cooldown = 0
@@ -86,4 +77,50 @@ function makeSnakeTurret( health, damage, cooldown )
 	turret.resetCooldown = resetCooldown
 
 	return turret
+end
+
+--- Make a snake and place its props in the game state
+function makeRunningSnake( state, length, config )
+	local theSnake = {}
+	theSnake.joints = {}
+	theSnake.mountedTurrets = {}
+	theSnake.jointSpacing = 20
+	theSnake.tDist = 0
+	theSnake.speed = 60
+
+	table.insert( theSnake.joints, makeSnakeHead() )
+	for i=1,length do
+		table.insert( theSnake.joints, makeSnakeJoint() )
+		if i%3 == 0 then
+			theSnake.mountedTurrets[i] = makeSnakeTurret()
+		end
+	end
+	table.insert( theSnake.joints, makeSnakeTail() )
+	
+	for i,v in ipairs(theSnake.joints) do
+		state.objectLayer:insertProp(v.prop)
+	end
+	for i,v in pairs(theSnake.mountedTurrets) do
+		state.objectLayer:insertProp(v.prop)
+	end
+
+	function theSnake:clear()
+		for i,v in ipairs( self.joints ) do
+			state.objectLayer:removeProp( v.prop )
+		end
+		for i,v in pairs( self.mountedTurrets ) do
+			state.objectLayer:removeProp( v.prop )
+		end
+	end
+
+	function theSnake:countMounts()
+		local rez = 0
+		for i,v in pairs( self.mountedTurrets ) do
+			rez = rez+1
+		end
+		return rez
+	end
+
+	if state.theSnake then state.theSnake:clear() end
+	state.theSnake = theSnake
 end
