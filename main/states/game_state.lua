@@ -100,9 +100,13 @@ function state:onLoad()
 	self.objectLayer:insertProp( self.pathHolder.prop )
 
 	gfxQuad = MOAIGfxQuad2D.new ()
-	gfxQuad:setTexture ( "assets/moai.png" )
-	gfxQuad:setRect ( -128, -128, 128, 128 )
+	gfxQuad:setTexture ( "assets/BACKGROUND.png" )
+	gfxQuad:setRect ( -400, -240, 400, 240 )
 	gfxQuad:setUVRect ( 0, 0, 1, 1 )
+
+	bg = MOAIProp2D.new ()
+	bg:setDeck( gfxQuad )
+	self.bgLayer:insertProp( bg )
 
 	loadLevel( self, '1.json' )
 end
@@ -123,8 +127,11 @@ function state:onInput()
 	elseif LRInputManager.up() then
 		self.pathHolder:finalizePath()
 		print (self.theSnake)
-		makeRunningSnake( self, 10 )
-		print (self.theSnake)
+		if self.theSnake then
+			self.theSnake.tDist = 0
+		else
+			self.theSnake = makeRunningSnake( self, 10 )
+		end
 		isDrawing = false
 	end
 end

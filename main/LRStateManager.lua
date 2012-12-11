@@ -163,8 +163,10 @@ function LRStateManager.pop ()
 	rebuildRenderStack ()
 	MOAISim.forceGarbageCollection ()
 
+
 	-- do the state's onFocus
-	if type ( currentState.onFocus ) == 'function' then
+
+	if currentState and type ( currentState.onFocus ) == 'function' then
 		currentState:onFocus ()
 	end
 

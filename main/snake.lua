@@ -121,6 +121,5 @@ function makeRunningSnake( state, length, config )
 		return rez
 	end
 
-	if state.theSnake then state.theSnake:clear() end
-	state.theSnake = theSnake
+	return theSnake
 end
