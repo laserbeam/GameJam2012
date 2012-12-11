@@ -43,10 +43,24 @@ function makeSnakeTail()
 	return tail
 end
 
+-- Nope, we'll just set this directly... DUCK TYPE!
+-- 
+-- -- I am declaring setTarget outside of any object
+-- -- so I can just attach it to anything
+-- function setTarget( self, target )
+-- 	self.target = target
+-- end
+
+-- function clearTarget( self )
+-- 	self.target = nil
+-- end
+
 function makeSnakeTurret()
 	turret = {}
 	turret.prop = MOAIProp2D.new()
 	turret.prop:setDeck(decks.turret)
-	turret.target = {0, 0}
+	turret.target = nil
+	turret.range = 100
+
 	return turret
 end

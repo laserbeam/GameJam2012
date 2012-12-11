@@ -6,7 +6,7 @@ LRLogger.DEBUG = 3
 LRLogger.STATUS = 4
 LRLogger.VERBOSE = 5
 LRLogger.level = LRLogger.VERBOSE
-LRLogger.useFile = 'log.txt'
+LRLogger.useFile = nil --'log.txt'
 if LRLogger.level > 0 and LRLogger.useFile then
 	LRLogger.file = io.open('log.txt', 'w')
 end

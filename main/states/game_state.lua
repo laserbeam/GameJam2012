@@ -79,7 +79,7 @@ speed = 0
 isDrawing = false
 
 --- Make a snake and place its props in the game state
-function makeRunningSnake( state, length, config )
+local function makeRunningSnake( state, length, config )
 	local theSnake = {}
 	theSnake.joints = {}
 	theSnake.mountedTurrets = {}
@@ -125,6 +125,21 @@ function makeRunningSnake( state, length, config )
 
 end
 
+--- Populates the state with enemies based on some level file
+--- but right now it just adds a couple turrets
+local function loadLevel( state, levelName )
+	state.enemies = {}
+	e = makeEnemyTurret( 20, 10, 10 )
+	e.prop:setLoc( -200, -200 )
+	state.layers[1]:insertProp( e.prop )
+	table.insert( state.enemies, e )
+
+	e = makeEnemyTurret( 20, 10, 10 )
+	e.prop:setLoc( 100, 100 )
+	state.layers[1]:insertProp( e.prop )
+	table.insert( state.enemies, e )
+end
+
 function state:onLoad()
 	trace('onLoad called')
 	self:initLayers()
@@ -136,19 +151,8 @@ function state:onLoad()
 	gfxQuad:setRect ( -128, -128, 128, 128 )
 	gfxQuad:setUVRect ( 0, 0, 1, 1 )
 
-	moving = MOAIProp2D.new ()
-	moving:setDeck( gfxQuad )
-	moving:setScl( 0.1 )
-	self.layers[1]:insertProp( moving )
 
-	tail = MOAIProp2D.new ()
-	tail:setDeck( gfxQuad )
-	tail:setScl( 0.1 )
-	self.layers[1]:insertProp( tail )
-
-	turret = makeEnemyTurret( 50, 10, 10 )
-	turret.prop:setLoc(0, 0)
-	self.layers[1]:insertProp( turret.prop )
+	loadLevel( self )
 
 end
 
@@ -174,23 +178,52 @@ function state:onInput()
 	end
 end
 
-function state:onUpdate( time )
-	if (not isDrawing) and self.theSnake then
-		local dist = self.theSnake.tDist
-		for i,v in ipairs(self.theSnake.joints) do
-			local x, y, angle = self.pathHolder:getXYAngleAtDistance(dist)
+local function updateMovingSnake( scene, time )
+	if (not isDrawing) and scene.theSnake then
+		local dist = scene.theSnake.tDist
+		for i,v in ipairs(scene.theSnake.joints) do
+			local x, y, angle = scene.pathHolder:getXYAngleAtDistance(dist)
 			angle = angle or 0
 			v.prop:setLoc( x, y )
 			v.prop:setRot( degree(angle)+90 )
-			if self.theSnake.mountedTurrets[i] ~= 0 then
-				local t = self.theSnake.mountedTurrets[i]
+			if scene.theSnake.mountedTurrets[i] ~= 0 then
+				local t = scene.theSnake.mountedTurrets[i]
 				t.prop:setLoc( x, y )
-				angle = angleFromXY( x, y, t.target[1], t.target[2] )
+				if t.target then
+					angle = angleFromXY( x, y, t.target.prop:getLoc() )
+				end
 				t.prop:setRot( degree(angle)+90 )
 			end
-			dist = dist - self.theSnake.jointSpacing
+			dist = dist - scene.theSnake.jointSpacing
 		end
-		self.theSnake.tDist = self.theSnake.tDist + self.theSnake.speed*time
+		scene.theSnake.tDist = scene.theSnake.tDist + scene.theSnake.speed*time
+	end
+end
+
+local function updateSnakeTurrets( scene, time )
+	for i,turret in ipairs( scene.theSnake.mountedTurrets ) do
+		if turret ~= 0 then
+			if turret.target then
+				if distanceSq( turret.prop, turret.target.prop ) > turret.range * turret.range then
+					turret.target = nil
+				end
+			end
+			if not turret.target and scene.enemies then
+				for j,enemy in pairs( scene.enemies ) do
+					if distanceSq( turret.prop, enemy.prop ) <= turret.range * turret.range then
+						turret.target = enemy
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
+function state:onUpdate( time )
+	updateMovingSnake( self, time )
+	if self.theSnake then
+		updateSnakeTurrets( self, time )
 	end
 end
 

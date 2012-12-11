@@ -27,8 +27,8 @@ LRGame = {}
 --=========================================================================
 function LRGame.init( name )
 	name = name or 'WORK IN PROGRESS'
-	local w, h = 800, 600
-	local r = 800/600
+	local w, h = 1024, 576
+	-- local r = 800/480
 	if MOAIEnvironment.screenHeight and MOAIEnvironment.screenWidth then
 		w = MOAIEnvironment.screenWidth
 		h = MOAIEnvironment.screenHeight
@@ -41,7 +41,8 @@ function LRGame.init( name )
 
 	MAIN_VIEWPORT = MOAIViewport.new ()
 	MAIN_VIEWPORT:setSize ( w, h )
-	MAIN_VIEWPORT:setScale ( r*600, -600 )
+	-- Multiply 800 by r if you want to maintain aspect ratio
+	MAIN_VIEWPORT:setScale ( 800, -480 )
 
 end
 

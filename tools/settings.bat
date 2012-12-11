@@ -1,1 +1,1 @@
-set BUNDLE_NAME=../tools/sample.moai
+set BUNDLE_NAME=sample.moai
