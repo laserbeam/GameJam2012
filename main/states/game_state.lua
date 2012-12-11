@@ -104,12 +104,23 @@ function makeRunningSnake( state, length, config )
 		state.layers[1]:insertProp(v.prop)
 	end
 	for i,v in ipairs(theSnake.mountedTurrets) do
-		print (v)
 		if v ~= 0 then
-			print ("LALALA")
 			state.layers[1]:insertProp(v.prop)
 		end
 	end
+
+	function theSnake:clear()
+		for i,v in ipairs(theSnake.joints) do
+			state.layers[1]:removeProp(v.prop)
+		end
+		for i,v in ipairs(theSnake.mountedTurrets) do
+			if v ~= 0 then
+				state.layers[1]:removeProp(v.prop)
+			end
+		end
+	end
+
+	if state.theSnake then state.theSnake.clear() end
 	state.theSnake = theSnake
 
 end
