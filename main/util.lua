@@ -1,5 +1,6 @@
 local sqrt = math.sqrt 
 local floor = math.floor 
+local atan = math.atan 
 INFINITY = 0x3f3f3f3f
 
 ---------------------------------------------------------------------------
@@ -19,7 +20,6 @@ end
 
 ---------------------------------------------------------------------------
 -- Get the distance between 2 rigs
-
 function distanceSqXY( ax, ay, bx, by )
 	return (ax-bx)*(ax-bx) + (ay-by)*(ay-by)
 end
@@ -38,6 +38,37 @@ function distance( A, B )
 	return sqrt( distanceSq( A, B ) )
 end
 
+---------------------------------------------------------------------------
+-- Get the angle of a segment - RADIANS
+-- If bx and by are not specified, it considers the segment 0, 0, ax, ay
+function angleFromXY( ax, ay, bx, by )
+	ax = ax or 0
+	ay = ay or 0
+	bx = bx or 2*ax
+	by = by or 2*ay
+	local x, y = bx-ax, by-ay
+	local angle = 0
+	if x == 0 then
+		if y > 0 then
+			angle = math.pi/2
+		else
+			angle = -math.pi/2
+		end 
+	else
+		angle=atan(y/x)
+		if x<0 then angle = angle + math.pi end 
+	end
+	return angle
+end
+
+
+function degree( rad ) 
+	return rad*180/math.pi
+end
+
+function radian( deg ) 
+	return deg*math.pi/180
+end
 
 ---------------------------------------------------------------------------
 --- Binary search through a sorted array 
@@ -67,7 +98,8 @@ function makeButton ( texture, w, h )
 	local gfxQuad = MOAIGfxQuad2D.new ()
 	gfxQuad:setTexture ( texture )
 	gfxQuad:setRect ( -w/2, -h/2, w/2, h/2 )
-	
+	gfxQuad:setUVRect ( 0, 0, 1, 1 )
+
 	local prop = MOAIProp2D.new ()
 	prop:setDeck ( gfxQuad )
 	prop:setPriority ( 0 )
