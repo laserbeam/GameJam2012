@@ -4,7 +4,6 @@
 -- It's just there to know Scenes exist :))
 --=========================================================================
 
-
 LRState = {}
 LRState.__index = LRState
 
@@ -31,12 +30,15 @@ function LRState:onUpdate( time )
 
 function LRState:initLayers( layerCount )
 	layerCount = layerCount or 1
-	self.objectLayerID = math.min(layerCount, 2)
 	for i=1,layerCount do
 		local layer = MOAILayer2D.new()
 		layer:setViewport( MAIN_VIEWPORT )
 		table.insert(self.layers, layer)
 	end
+	self.objectLayerID = math.min(layerCount, 2)
+	self.objectLayer = self.layers[self.objectLayerID]
+	self.bgLayer = self.layers[1]
+	self.fgLayer = self.layers[ math.max(layerCount, 3) ]
 end
 
 

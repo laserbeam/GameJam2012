@@ -22,6 +22,7 @@ local stateStack = {}		-- the state stack
 local loadedStates = {}		-- this module loads states in a lazy way, if a lua state file was
 							-- loaded keep the state here, otherwise it will load it with dofile
 
+local delta
 local updateThread = MOAIThread.new ()
 FRAME_TIME = 0
 
@@ -30,7 +31,7 @@ FRAME_TIME = 0
 --=========================================================================
 local function updateFunction ()
 	local lastTime = MOAISim.getElapsedTime()
-	local delta = 0
+	delta = 0
 	local now = 0
 	while true do
 		coroutine.yield ()
@@ -53,6 +54,10 @@ local function updateFunction ()
 		end
 
 	end
+end
+
+function LRStateManager.getTime()
+	return delta
 end
 
 local currentLayers = {}	-- used to pass MOAIRenderables (Layers) to MOAIRenderMgr

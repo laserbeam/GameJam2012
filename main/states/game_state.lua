@@ -2,6 +2,11 @@ require 'LRState'
 require 'player'
 require 'enemies'
 require 'snake'
+
+local sin = math.sin 
+local cos = math.cos 
+local abs = math.abs 
+
 local state = LRState.new()
 
 function makePathHolder() 
@@ -71,11 +76,6 @@ function makePathHolder()
 end
 
 
-moving = {}
-tail = {}
-turret = {}
-tDist = 0
-speed = 0
 isDrawing = false
 
 --- Make a snake and place its props in the game state
@@ -101,28 +101,27 @@ local function makeRunningSnake( state, length, config )
 	table.insert( theSnake.mountedTurrets, 0 )
 
 	for i,v in ipairs(theSnake.joints) do
-		state.layers[1]:insertProp(v.prop)
+		state.objectLayer:insertProp(v.prop)
 	end
 	for i,v in ipairs(theSnake.mountedTurrets) do
 		if v ~= 0 then
-			state.layers[1]:insertProp(v.prop)
+			state.objectLayer:insertProp(v.prop)
 		end
 	end
 
 	function theSnake:clear()
 		for i,v in ipairs(theSnake.joints) do
-			state.layers[1]:removeProp(v.prop)
+			state.objectLayer:removeProp(v.prop)
 		end
 		for i,v in ipairs(theSnake.mountedTurrets) do
 			if v ~= 0 then
-				state.layers[1]:removeProp(v.prop)
+				state.objectLayer:removeProp(v.prop)
 			end
 		end
 	end
 
 	if state.theSnake then state.theSnake.clear() end
 	state.theSnake = theSnake
-
 end
 
 --- Populates the state with enemies based on some level file
@@ -131,42 +130,40 @@ local function loadLevel( state, levelName )
 	state.enemies = {}
 	e = makeEnemyTurret( 20, 10, 10 )
 	e.prop:setLoc( -200, -200 )
-	state.layers[1]:insertProp( e.prop )
-	table.insert( state.enemies, e )
+	state.objectLayer:insertProp( e.prop )
+	state.enemies[e] = e
 
 	e = makeEnemyTurret( 20, 10, 10 )
 	e.prop:setLoc( 100, 100 )
-	state.layers[1]:insertProp( e.prop )
-	table.insert( state.enemies, e )
+	state.objectLayer:insertProp( e.prop )
+	state.enemies[e] = e
 end
 
 function state:onLoad()
 	trace('onLoad called')
-	self:initLayers()
+	self:initLayers( 3 )
 	self.pathHolder = makePathHolder()
-	self.layers[1]:insertProp( self.pathHolder.prop )
+	self.objectLayer:insertProp( self.pathHolder.prop )
 
 	gfxQuad = MOAIGfxQuad2D.new ()
 	gfxQuad:setTexture ( "assets/moai.png" )
 	gfxQuad:setRect ( -128, -128, 128, 128 )
 	gfxQuad:setUVRect ( 0, 0, 1, 1 )
 
-
-	loadLevel( self )
-
+	loadLevel( self, '1.json' )
 end
 
 function state:onInput()
-	local x, y = self.layers[1]:wndToWorld ( LRInputManager.getTouch ())	
+	local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())	
 	-- print ( x, y )
 	if LRInputManager.down () then
-		local x, y = self.layers[1]:wndToWorld ( LRInputManager.getTouch ())
+		local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())
 		self.pathHolder:resetPath()
 		self.pathHolder:addPoint( x, y )
 
 		isDrawing = true
 	elseif LRInputManager.isDown() then
-		local x, y = self.layers[1]:wndToWorld ( LRInputManager.getTouch ())
+		local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())
 		self.pathHolder:addPoint( x, y )
 		self.pathHolder.prop:forceUpdate()
 	elseif LRInputManager.up() then
@@ -200,11 +197,49 @@ local function updateMovingSnake( scene, time )
 	end
 end
 
+local function fire( scene, shooter, target )
+	local bullet = {}
+	bullet.prop = MOAIProp2D.new()
+	bullet.prop:setDeck( shooter.bulletDeck )
+	bullet.prop:setLoc( shooter.prop:getLoc() )
+	bullet.damage = shooter.damage
+	local speed = 200
+	local x, y = shooter.prop:getLoc()
+	local angle = angleFromXY( x, y, target.prop:getLoc() )
+	local time = LRStateManager.getTime()
+	bullet.dx = speed*time*cos(angle)
+	bullet.dy = speed*time*sin(angle)
+	bullet.prop:setRot( degree(angle)+90 )
+
+	-- bullet.delay = distance( shooter.prop, target.prop ) / speed
+	shooter:resetCooldown()
+	bullet.thread = MOAIThread:new()
+	scene.fgLayer:insertProp( bullet.prop )
+	bullet.thread:run (
+		function ()
+			local x, y = bullet.prop:getLoc()
+			local tx, ty = target.prop:getLoc()
+			while abs(tx-x) > abs(bullet.dx) and abs(ty-y) > abs(bullet.dy) do
+				coroutine.yield()
+				bullet.prop:moveLoc( bullet.dx, bullet.dy )
+				if target.isDead then 
+					scene.fgLayer:removeProp( bullet.prop )
+					return
+				end
+				x, y = bullet.prop:getLoc()
+				tx, ty = target.prop:getLoc()
+			end
+			scene.fgLayer:removeProp( bullet.prop )
+			target:applyDamage( bullet.damage )
+		end
+	)
+end
+
 local function updateSnakeTurrets( scene, time )
 	for i,turret in ipairs( scene.theSnake.mountedTurrets ) do
 		if turret ~= 0 then
 			if turret.target then
-				if distanceSq( turret.prop, turret.target.prop ) > turret.range * turret.range then
+				if turret.target.isDead or distanceSq( turret.prop, turret.target.prop ) > turret.range * turret.range then
 					turret.target = nil
 				end
 			end
@@ -216,6 +251,13 @@ local function updateSnakeTurrets( scene, time )
 					end
 				end
 			end
+
+			-- If the turent has cooldown on its weapon, update it
+			if turret.updateCooldown then turret:updateCooldown( time ) end
+			if turret.cooldown <= 0 and turret.target then
+				fire( scene, turret, turret.target )
+			end
+
 		end
 	end
 end
@@ -224,6 +266,13 @@ function state:onUpdate( time )
 	updateMovingSnake( self, time )
 	if self.theSnake then
 		updateSnakeTurrets( self, time )
+	end
+	for i, e in pairs( self.enemies ) do
+		if e.isDead then
+			print (e, " died... how sad")
+			self.objectLayer:removeProp( e.prop )
+			self.enemies[e] = nil
+		end
 	end
 end
 

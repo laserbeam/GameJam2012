@@ -1,4 +1,4 @@
-
+local max = math.max 
 
 local decks = {}
 decks.head = MOAIGfxQuad2D.new ()
@@ -20,6 +20,11 @@ decks.turret = MOAIGfxQuad2D.new ()
 decks.turret:setTexture ( "assets/gun.png" )
 decks.turret:setRect ( -20, -20, 20, 20 )
 decks.turret:setUVRect ( 0, 0, 1, 1 )
+
+decks.bullet = MOAIGfxQuad2D.new ()
+decks.bullet:setTexture ( "assets/gun.png" )
+decks.bullet:setRect ( -8, -8, 8, 8 )
+decks.bullet:setUVRect ( 0, 0, 1, 1 )
 
 
 function makeSnakeHead()
@@ -55,12 +60,30 @@ end
 -- 	self.target = nil
 -- end
 
-function makeSnakeTurret()
+function updateCooldown( self, time )
+	self.cooldown = max( 0, self.cooldown - time )
+end
+
+function resetCooldown( self )
+	self.cooldown = self.maxCooldown
+end
+
+function makeSnakeTurret( health, damage, cooldown )
 	turret = {}
+	turret.health = health or 20
+	turret.maxHealth = turret.health
+	turret.damage = damage or 1
+	turret.cooldown = 0
+	turret.maxCooldown = cooldown or .8
 	turret.prop = MOAIProp2D.new()
 	turret.prop:setDeck(decks.turret)
 	turret.target = nil
-	turret.range = 100
+	turret.range = 130
+
+	turret.bulletDeck = decks.bullet
+
+	turret.updateCooldown = updateCooldown
+	turret.resetCooldown = resetCooldown
 
 	return turret
 end

@@ -17,7 +17,7 @@ function makeEnemy( health, scoreValue, goldValue )
 
 	function enemy:applyDamage( damage ) 
 		self.health = self.health - damage
-		if self.health < 0 then self.die() end
+		if self.health < 0 then self:die() end
 	end
 
 	function enemy:healDamage( damage )
@@ -27,6 +27,7 @@ function makeEnemy( health, scoreValue, goldValue )
 	function enemy:die()
 		PLAYER.score = PLAYER.score + self.scoreValue
 		PLAYER.gold = PLAYER.gold + self.goldValue
+		self.isDead = true
 	end
 	return enemy
 end
