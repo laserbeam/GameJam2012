@@ -36,18 +36,41 @@ function makeUnit( health )
 	return unit
 end
 
-function pickTargetInRangeFromTable( self, table, range )
+local function rank( best, current, desc )
+	if current < best and not desc then return true end
+	if current > best and desc then return true end
+	return false
+end
+
+--- Selecting a target requires a lot of parameters
+-- range - limit only to units from the table which are in range
+-- prioritize - select the target with the best field named by prioritize or
+-- 		best distance from the seeker
+-- desc - true if one wants the largest prioritize, not smallest
+-- force - drop current target even if it's still in range
+-- distinct - true if the selection should ignore the selector
+function selectTarget( self, table, range, prioritize, desc, force, distinct )
 	range = range or INFINITY
 	local target = self.target
 	if target then
-		if target.isDead or distanceSq( self.prop, target.prop ) > self.range * self.range then
+		if force or target.isDead or distanceSq( self.prop, target.prop ) > self.range * self.range then
 			target = nil
 		end
 	end
 	if not target and table then
+		best = INFINITY
+		if desc then best = -INFINITY end
 		for _, v in pairs( table ) do
-			if distanceSq( self.prop, v.prop ) < range*range then
-				return v
+			local d = distanceSq( self.prop, v.prop )
+			if (not distinct or v ~= self) and d < range*range then
+				if not prioritize then return v
+				elseif prioritize == 'distance' and rank( best, d, desc ) then
+					best = d
+					target = v
+				elseif v[prioritize] and rank( best, v[prioritize], desc ) then
+					best = v[prioritize]
+					target = v
+				end
 			end
 		end
 	end

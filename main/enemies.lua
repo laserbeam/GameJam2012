@@ -57,7 +57,7 @@ function makeEnemyTurret( health, scoreValue, goldValue, damage, cooldown, range
 	function turret:update( gameState, time )
 		self:updateCooldown( time )
 		if gameState.theSnake then
-			self.target = pickTargetInRangeFromTable( self, gameState.theSnake.mountedTurrets, self.range )
+			self.target = selectTarget( self, gameState.theSnake.mountedTurrets, self.range )
 		end
 		if self.target then
 			rotateToTarget( self, self.target )
@@ -86,7 +86,7 @@ function makeSmallSeeker( health, scoreValue, goldValue, damage, cooldown, range
 	function seeker:update( gameState, time )
 		self:updateCooldown( time )
 		if gameState.theSnake then
-			self.target = pickTargetInRangeFromTable( self, gameState.theSnake.mountedTurrets )
+			self.target = selectTarget( self, gameState.theSnake.mountedTurrets, nil, 'distance' )
 		end
 		if self.target then
 			local angle = rotateToTarget( self, self.target )

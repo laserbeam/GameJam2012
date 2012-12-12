@@ -21,6 +21,11 @@ decks.turret:setTexture ( "assets/gun.png" )
 decks.turret:setRect ( -20, -20, 20, 20 )
 decks.turret:setUVRect ( 0, 0, 1, 1 )
 
+decks.healer = MOAIGfxQuad2D.new ()
+decks.healer:setTexture ( "assets/green.png" )
+decks.healer:setRect ( -20, -20, 20, 20 )
+decks.healer:setUVRect ( 0, 0, 1, 1 )
+
 decks.bullet = MOAIGfxQuad2D.new ()
 decks.bullet:setTexture ( "assets/gun.png" )
 decks.bullet:setRect ( -8, -8, 8, 8 )
@@ -61,12 +66,10 @@ end
 
 local function makeSnakeTurret( health, damage, cooldown, range )
 	turret = makeUnit( health or 20 )
-	turret.maxHealth = turret.health
 	turret.damage = damage or 2
 	turret.cooldown = 0
 	turret.maxCooldown = cooldown or .8
-	turret.prop = MOAIProp2D.new()
-	turret.prop:setDeck(decks.turret)
+	turret.prop:setDeck( decks.turret )
 	turret.target = nil
 	turret.range = range or 130
 
@@ -75,7 +78,41 @@ local function makeSnakeTurret( health, damage, cooldown, range )
 	turret.updateCooldown = updateCooldown
 	turret.resetCooldown = resetCooldown
 
+	function turret:update ( gameState, time )
+		self.target = selectTarget( self, gameState.enemies, self.range, 'health', true )
+
+		self:updateCooldown( time )
+		if self.cooldown <= 0 and self.target then
+			fire( gameState, self, self.target, self.bulletDeck )
+		end
+	end
+
 	return turret
+end
+
+local function makeHealMount( health, damage, cooldown )
+	turret = makeUnit( health or 20 )
+	turret.damage = damage or 5
+	turret.cooldown = cooldown or 3
+	turret.maxCooldown = cooldown or 3
+	turret.prop:setDeck( decks.healer )
+
+	turret.updateCooldown = updateCooldown
+	turret.resetCooldown = resetCooldown
+
+	function turret:update( gameState, time )
+		self:updateCooldown( time )
+		if self.cooldown <= 0 then
+			self.target = selectTarget( self, gameState.theSnake.mountedTurrets, false, 'health', false, true )
+			if self.target then
+				self.target:healDamage( self.damage )
+				self:resetCooldown()
+			end
+		end
+	end
+
+	return turret
+
 end
 
 --- Make a snake and place its props in the game state
@@ -177,6 +214,8 @@ function makeTemplateMount( name )
 	local mount = nil
 	if name == 'turret' then
 		mount = makeSnakeTurret( s.health, s.damage, s.cooldown, s.range )
+	elseif name == 'healer' then
+		mount = makeHealMount( s.health, s.damage, s.cooldown )
 	end
 	return mount
 end

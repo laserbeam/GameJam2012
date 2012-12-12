@@ -5,5 +5,11 @@
 		"cooldown":0.8,
 		"range":130,
 		"cost":20
+	},
+	"healer":{
+		"health":20,
+		"damage":5,
+		"cooldown":3,
+		"cost":35
 	}
 }

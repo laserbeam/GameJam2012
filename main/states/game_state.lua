@@ -160,7 +160,7 @@ function state:onLoad()
 		PLAYER.snakeConfig = makeSnakeConfig()
 		PLAYER.snakeConfig:setMountLength( 3 )
 		PLAYER.snakeConfig:setMountTemplate( 1, 'turret' )
-		PLAYER.snakeConfig:setMountTemplate( 2, 'turret' )
+		PLAYER.snakeConfig:setMountTemplate( 2, 'healer' )
 		PLAYER.snakeConfig:setMountTemplate( 3, 'turret' )
 	end
 end
@@ -246,13 +246,7 @@ local function updateSnakeTurrets( gameState, time )
 			gameState.theSnake.mountedTurrets[i] = nil
 			gameState.objectLayer:removeProp( turret.prop )
 		else
-			turret.target = pickTargetInRangeFromTable( turret, gameState.enemies, turret.range )
-
-			-- If the turent has cooldown on its weapon, update it
-			if turret.updateCooldown then turret:updateCooldown( time ) end
-			if turret.cooldown <= 0 and turret.target then
-				fire( gameState, turret, turret.target, turret.bulletDeck )
-			end
+			turret:update( gameState, time )
 		end
 	end
 end
