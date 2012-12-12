@@ -1,8 +1,8 @@
 {
 	"name":"level1",
 	"enemies":[
-		{"t":"spawner", "x":-300, "y":200},
+		{"t":"spawner", "x":300, "y":-180},
 		{"t":"turret", "x":100, "y":100},
-		{"t":"turret", "x":-200, "y":-200}
+		{"t":"turret", "x":-200, "y":-180}
 	]
 }

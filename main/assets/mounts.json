@@ -1,0 +1,7 @@
+{
+	"turret":{
+		"health":20,
+		"damage":2,
+		"cooldown":0.8
+	}
+}

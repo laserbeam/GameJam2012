@@ -116,10 +116,8 @@ function makeUnitSpawner( health, scoreValue, goldValue, spawnedUnit, cooldown )
 	spawner.resetCooldown = resetCooldown
 	
 	function spawner:update( gameState, time )
-		if not gameState.gameStarted then return end
 		self:updateCooldown( time )
 		if self.cooldown <= 0 then
-			print ("SPAWN")
 			e = makeTemplateEnemy( spawnedUnit )
 			gameState:insertEnemy( e, self.prop:getLoc() )
 			self:resetCooldown()

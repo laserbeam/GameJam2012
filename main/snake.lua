@@ -80,6 +80,7 @@ function makeSnakeTurret( health, damage, cooldown )
 end
 
 --- Make a snake and place its props in the game state
+-- Length only covers joints... the snake has head + length*joints + tail number of segments
 function makeRunningSnake( state, length, config )
 	local theSnake = {}
 	theSnake.joints = {}
@@ -87,6 +88,7 @@ function makeRunningSnake( state, length, config )
 	theSnake.jointSpacing = 20
 	theSnake.tDist = 0
 	theSnake.speed = 60
+	theSnake.totalLength = theSnake.jointSpacing*(length+1)
 
 	table.insert( theSnake.joints, makeSnakeHead() )
 	for i=1,length do
@@ -97,10 +99,10 @@ function makeRunningSnake( state, length, config )
 	end
 	table.insert( theSnake.joints, makeSnakeTail() )
 	
-	for i,v in ipairs(theSnake.joints) do
+	for i,v in ipairs( theSnake.joints ) do
 		state.objectLayer:insertProp(v.prop)
 	end
-	for i,v in pairs(theSnake.mountedTurrets) do
+	for i,v in pairs( theSnake.mountedTurrets ) do
 		state.objectLayer:insertProp(v.prop)
 	end
 
@@ -119,6 +121,14 @@ function makeRunningSnake( state, length, config )
 			rez = rez+1
 		end
 		return rez
+	end
+
+	function theSnake:getMount( slot )
+		return self.mountedTurrets[ slot*3-1 ]
+	end
+
+	function theSnake:setMount( slot, mount )
+		self.mountedTurrets[ slot*3-1 ] = mount
 	end
 
 	return theSnake

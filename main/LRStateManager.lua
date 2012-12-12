@@ -25,6 +25,7 @@ local loadedStates = {}		-- this module loads states in a lazy way, if a lua sta
 local delta
 local updateThread = MOAIThread.new ()
 FRAME_TIME = 0
+local speedScale = 1
 
 --=========================================================================
 -- Local functions.
@@ -37,6 +38,7 @@ local function updateFunction ()
 		coroutine.yield ()
 		now = MOAISim.getElapsedTime()
 		delta = now - lastTime
+		delta = delta*speedScale
 		FRAME_TIME = delta
 		lastTime = now
 
@@ -97,6 +99,11 @@ end
 --=========================================================================
 -- Public functions.
 --=========================================================================
+
+function LRStateManager.setSpeedScale( scale )
+	speedScale = scale or 1
+end
+
 function LRStateManager.run ()
 	updateThread:run ( updateFunction )
 end

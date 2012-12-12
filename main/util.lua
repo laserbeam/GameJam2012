@@ -1,6 +1,8 @@
 local sqrt = math.sqrt 
 local floor = math.floor 
 local atan = math.atan 
+local min = math.min 
+local max = math.max 
 INFINITY = 0x3f3f3f3f
 
 ---------------------------------------------------------------------------
@@ -147,6 +149,10 @@ function loadJSONFile( filename )
 	local file = io.open( filename, 'r' ) 
 	local string = file:read( '*all' )
 	return MOAIJsonParser.decode( string )
+end
+
+function clamp( x, a, b )
+	return min( max( x, a ), b )
 end
 
 function makeTextButton ( font, texture, w, h, textY )

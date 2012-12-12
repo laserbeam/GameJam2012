@@ -10,11 +10,35 @@ local abs = math.abs
 
 local state = LRState.new()
 
+-- Distinctive states a game can be:
+-- Idle == no simulations, the player can start drawing
+-- Drawing == the player is drawing the path
+-- Running == simulations are taking place and the snake is walking
+STATUS_IDLE = 1
+STATUS_DRAWING = 2
+STATUS_RUNNING = 3
+
+-- Arena coordinates
+minX = -400+45
+maxX = 400-45
+minY = -240+45
+maxY = 240-45
+
 local function makePathHolder() 
 	
+	local startX = minX
+	local startY = maxY-30
+	local prestartX = startX -60
+	local prestartY = startY
+
 	local pathHolder = {}
-	pathHolder.pathXY = {}
-	pathHolder.lengths = {}
+	function pathHolder:resetPath()
+		self.pathXY = {}
+		self.lengths = {0}
+		self.totalLength = 0
+	end
+
+	pathHolder:resetPath()
 
 	local onDraw = function ( index, xOff, yOff, xFlip, yFlip )
 		MOAIGfxDevice.setPenColor( 1, 0, 0, 1 )
@@ -31,6 +55,7 @@ local function makePathHolder()
 				table.insert( self.lengths, d + aux )
 				table.insert( self.pathXY, x )
 				table.insert( self.pathXY, y )
+				self.totalLength = d + aux
 			end
 		else
 			table.insert( self.pathXY, x )
@@ -38,14 +63,17 @@ local function makePathHolder()
 		end
 	end
 
-	function pathHolder:resetPath()
-		self.pathXY = {}
-		self.lengths = {0}
-	end
-
+	-- Rebuilds the path to have a beginning and an end behind the wall
 	function pathHolder:finalizePath()
-		-- This is called when the path is finished, the path should be smoothed here!
-		print (table.getn(self.pathXY), table.getn(self.lengths))
+		local p = self.pathXY
+		self:resetPath()
+		self:addPoint( prestartX, prestartY )
+		self:addPoint( startX, startY )
+		for i=1,#p,2 do
+			self:addPoint( p[i], p[i+1] )
+		end
+		self:addPoint( startX+10, startY )
+		self:addPoint( prestartX, prestartY )
 	end
 
 	function pathHolder:getXYAngleAtDistance( distance )
@@ -76,12 +104,12 @@ local function makePathHolder()
 
 end
 
-isDrawing = false
-
 --- Populates the state with enemies based on some level file
 --- but right now it just adds a couple turrets
 local function loadLevel( state, levelName )
 	
+	state.status = STATUS_IDLE
+
 	local level = loadJSONFile( 'levels/' .. (levelName or 'level1.json') )
 	state:clearEnemies()
 	for _, template in pairs(level.enemies) do
@@ -93,6 +121,7 @@ end
 function state:insertEnemy( enemy, x, y )
 	self.enemies[enemy] = enemy
 	self.objectLayer:insertProp( enemy.prop )
+	enemy.prop:setPriority(100)
 	enemy.prop:setLoc( x, y )
 end
 
@@ -112,6 +141,7 @@ end
 
 function state:onLoad()
 	trace('onLoad called')
+	self.status = STATUS_IDLE
 	self:initLayers( 3 )
 	self.pathHolder = makePathHolder()
 	self.objectLayer:insertProp( self.pathHolder.prop )
@@ -126,92 +156,119 @@ function state:onLoad()
 	self.bgLayer:insertProp( bg )
 
 	loadLevel( self, 'level1.json' )
-	self.gameStarted = false
+end
+
+local function inStartArea( x, y )
+	return x < minX+60 and y > maxY-60
 end
 
 function state:onInput()
-	local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())	
-	-- print ( x, y )
-	if LRInputManager.down () then
+	if LRInputManager.down() and self.status == STATUS_IDLE then
 		local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())
-		self.pathHolder:resetPath()
-		self.pathHolder:addPoint( x, y )
-
-		isDrawing = true
-	elseif LRInputManager.isDown() then
+		x = clamp( x, minX, maxX )
+		y = clamp( y, minY, maxY )
+		
+		if inStartArea( x, y ) then
+			self.pathHolder:resetPath()
+			self.pathHolder:addPoint( x, y )
+			self.status = STATUS_DRAWING
+		end
+	elseif LRInputManager.isDown() and self.status == STATUS_DRAWING then
 		local x, y = self.objectLayer:wndToWorld ( LRInputManager.getTouch ())
+		x = clamp( x, minX, maxX )
+		y = clamp( y, minY, maxY )
 		self.pathHolder:addPoint( x, y )
 		self.pathHolder.prop:forceUpdate()
-	elseif LRInputManager.up() then
+	elseif LRInputManager.up() and self.status == STATUS_DRAWING then
 		self.pathHolder:finalizePath()
-		print (self.theSnake)
-		if self.theSnake then
-			self.theSnake.tDist = 0
+		if self.pathHolder.totalLength > 200 then
+			if self.theSnake then
+				self.theSnake.tDist = 0
+			else
+				self.theSnake = makeRunningSnake( self, 10 )
+			end
+			self.status = STATUS_RUNNING
 		else
-			self.theSnake = makeRunningSnake( self, 10 )
+			self.pathHolder:resetPath()
+			self.status = STATUS_IDLE
 		end
-		isDrawing = false
-		self.gameStarted = true
+	end
+
+	local k = LRInputManager.getKey()
+	if k == KEY['a'] then
+		LRStateManager.setSpeedScale( 1.5 )
+	elseif k == KEY['s'] then
+		LRStateManager.setSpeedScale( 2 )
+	elseif k == KEY['d'] then
+		LRStateManager.setSpeedScale( 0.5 )
+	elseif k == KEY['f'] then
+		LRStateManager.setSpeedScale( 1 )
 	end
 end
 
-local function updateMovingSnake( gameScene, time )
-	if (not isDrawing) and gameScene.theSnake then
-		local dist = gameScene.theSnake.tDist
-		for i,v in ipairs(gameScene.theSnake.joints) do
-			local x, y, angle = gameScene.pathHolder:getXYAngleAtDistance(dist)
+local function updateMovingSnake( gameState, time )
+	if gameState.theSnake then
+		local dist = gameState.theSnake.tDist
+		for i,v in ipairs(gameState.theSnake.joints) do
+			local x, y, angle = gameState.pathHolder:getXYAngleAtDistance(dist)
 			angle = angle or 0
 			v.prop:setLoc( x, y )
 			v.prop:setRot( degree(angle)+90 )
-			if gameScene.theSnake.mountedTurrets[i] then
-				local t = gameScene.theSnake.mountedTurrets[i]
+			if gameState.theSnake.mountedTurrets[i] then
+				local t = gameState.theSnake.mountedTurrets[i]
 				t.prop:setLoc( x, y )
 				if t.target then
 					angle = angleFromXY( x, y, t.target.prop:getLoc() )
 				end
 				t.prop:setRot( degree(angle)+90 )
 			end
-			dist = dist - gameScene.theSnake.jointSpacing
+			dist = dist - gameState.theSnake.jointSpacing
 		end
-		gameScene.theSnake.tDist = gameScene.theSnake.tDist + gameScene.theSnake.speed*time
+		gameState.theSnake.tDist = gameState.theSnake.tDist + gameState.theSnake.speed*time
+		if gameState.theSnake.tDist > gameState.pathHolder.totalLength + gameState.theSnake.totalLength then
+			gameState.status = STATUS_IDLE
+		end
 	end
 end
 
 
-local function updateSnakeTurrets( gameScene, time )
-	for i, turret in pairs( gameScene.theSnake.mountedTurrets ) do
+local function updateSnakeTurrets( gameState, time )
+	for i, turret in pairs( gameState.theSnake.mountedTurrets ) do
 		if turret.isDead then
-			gameScene.theSnake.mountedTurrets[i] = nil
-			gameScene.objectLayer:removeProp( turret.prop )
+			print (turret, "died... awwwwwwww, not cool")
+			gameState.theSnake.mountedTurrets[i] = nil
+			gameState.objectLayer:removeProp( turret.prop )
 		else
-			turret.target = pickTargetInRangeFromTable( turret, gameScene.enemies, turret.range )
+			turret.target = pickTargetInRangeFromTable( turret, gameState.enemies, turret.range )
 
 			-- If the turent has cooldown on its weapon, update it
 			if turret.updateCooldown then turret:updateCooldown( time ) end
 			if turret.cooldown <= 0 and turret.target then
-				fire( gameScene, turret, turret.target, turret.bulletDeck )
+				fire( gameState, turret, turret.target, turret.bulletDeck )
 			end
 		end
 	end
 end
 
-local function updateEnemies( gameScene, time )
-	for _, e in pairs( gameScene.enemies ) do
+local function updateEnemies( gameState, time )
+	for _, e in pairs( gameState.enemies ) do
 		if e.isDead then
-			print (e, " died... how sad")
-			gameScene:removeEnemy(e)
+			print (e, "died... how sad")
+			gameState:removeEnemy(e)
 		else
-			e:update( gameScene, time )
+			e:update( gameState, time )
 		end
 	end
 end
 
 function state:onUpdate( time )
-	updateMovingSnake( self, time )
-	if self.theSnake then
-		updateSnakeTurrets( self, time )
+	if self.status == STATUS_RUNNING then
+			updateMovingSnake( self, time )
+		if self.theSnake then
+			updateSnakeTurrets( self, time )
+		end
+		updateEnemies( self, time )
 	end
-	updateEnemies( self, time )
 end
 
 function state:onUnload()
