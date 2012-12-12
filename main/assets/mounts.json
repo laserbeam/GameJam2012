@@ -2,6 +2,8 @@
 	"turret":{
 		"health":20,
 		"damage":2,
-		"cooldown":0.8
+		"cooldown":0.8,
+		"range":130,
+		"cost":20
 	}
 }

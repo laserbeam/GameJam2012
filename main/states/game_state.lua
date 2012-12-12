@@ -107,7 +107,6 @@ end
 --- Populates the state with enemies based on some level file
 --- but right now it just adds a couple turrets
 local function loadLevel( state, levelName )
-	
 	state.status = STATUS_IDLE
 
 	local level = loadJSONFile( 'levels/' .. (levelName or 'level1.json') )
@@ -156,6 +155,14 @@ function state:onLoad()
 	self.bgLayer:insertProp( bg )
 
 	loadLevel( self, 'level1.json' )
+
+	if not PLAYER.snakeConfig then
+		PLAYER.snakeConfig = makeSnakeConfig()
+		PLAYER.snakeConfig:setMountLength( 3 )
+		PLAYER.snakeConfig:setMountTemplate( 1, 'turret' )
+		PLAYER.snakeConfig:setMountTemplate( 2, 'turret' )
+		PLAYER.snakeConfig:setMountTemplate( 3, 'turret' )
+	end
 end
 
 local function inStartArea( x, y )
@@ -180,12 +187,12 @@ function state:onInput()
 		self.pathHolder:addPoint( x, y )
 		self.pathHolder.prop:forceUpdate()
 	elseif LRInputManager.up() and self.status == STATUS_DRAWING then
-		self.pathHolder:finalizePath()
-		if self.pathHolder.totalLength > 200 then
+		if self.pathHolder.totalLength > 300 then
+			self.pathHolder:finalizePath()
 			if self.theSnake then
 				self.theSnake.tDist = 0
 			else
-				self.theSnake = makeRunningSnake( self, 10 )
+				self.theSnake = makeRunningSnake( self, PLAYER.snakeConfig )
 			end
 			self.status = STATUS_RUNNING
 		else

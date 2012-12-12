@@ -26,7 +26,6 @@ decks.bullet:setTexture ( "assets/gun.png" )
 decks.bullet:setRect ( -8, -8, 8, 8 )
 decks.bullet:setUVRect ( 0, 0, 1, 1 )
 
-
 function makeSnakeHead()
 	head = makeUnit( 20 )
 	head.prop = MOAIProp2D.new()
@@ -60,7 +59,7 @@ end
 -- 	self.target = nil
 -- end
 
-function makeSnakeTurret( health, damage, cooldown )
+local function makeSnakeTurret( health, damage, cooldown, range )
 	turret = makeUnit( health or 20 )
 	turret.maxHealth = turret.health
 	turret.damage = damage or 2
@@ -69,7 +68,7 @@ function makeSnakeTurret( health, damage, cooldown )
 	turret.prop = MOAIProp2D.new()
 	turret.prop:setDeck(decks.turret)
 	turret.target = nil
-	turret.range = 130
+	turret.range = range or 130
 
 	turret.bulletDeck = decks.bullet
 
@@ -81,20 +80,26 @@ end
 
 --- Make a snake and place its props in the game state
 -- Length only covers joints... the snake has head + length*joints + tail number of segments
-function makeRunningSnake( state, length, config )
+-- The length stored in the snake is the number of joints.
+-- There should be length/3 mounts on the snake (keep length%3==0)
+function makeRunningSnake( state, config )
 	local theSnake = {}
+	length = config.length
 	theSnake.joints = {}
 	theSnake.mountedTurrets = {}
 	theSnake.jointSpacing = 20
 	theSnake.tDist = 0
 	theSnake.speed = 60
-	theSnake.totalLength = theSnake.jointSpacing*(length+1)
+	theSnake.totalLength = theSnake.jointSpacing*(config.length+1)
 
 	table.insert( theSnake.joints, makeSnakeHead() )
 	for i=1,length do
 		table.insert( theSnake.joints, makeSnakeJoint() )
 		if i%3 == 0 then
-			theSnake.mountedTurrets[i] = makeSnakeTurret()
+			local m = config:getMountTemplate( i/3 )
+			if m then
+				theSnake.mountedTurrets[i] = makeTemplateMount( m )
+			end
 		end
 	end
 	table.insert( theSnake.joints, makeSnakeTail() )
@@ -133,3 +138,51 @@ function makeRunningSnake( state, length, config )
 
 	return theSnake
 end
+
+local templates = {}
+
+function makeSnakeConfig()
+	local config = {}
+	config.length = 0
+	config.mounts = {}
+	
+	function config:setMountLength( length )
+		self.length = length*3
+	end
+
+	function config:getMountCount( )
+		return math.floor(config.length+1/3)
+	end
+
+	function config:setMountTemplate( slot, mountType )
+		if slot > self.getMountCount() then return end
+		self.mounts[slot] = mountType
+	end
+
+	function config:getMountTemplate( slot )
+		return self.mounts[slot]
+	end
+
+	function config:getDeck( slot )
+		if config.mounts[slot] then return decks[config.mounts[slot]] end
+		return nil
+	end
+
+	return config
+end
+
+function makeTemplateMount( name )
+	local s = templates[name]
+	if not s then return nil end
+	local mount = nil
+	if name == 'turret' then
+		mount = makeSnakeTurret( s.health, s.damage, s.cooldown, s.range )
+	end
+	return mount
+end
+
+local function loadTemplates( filename )
+	templates = loadJSONFile( 'assets/' .. ( filename or 'mounts.json' ) )
+end
+
+loadTemplates()

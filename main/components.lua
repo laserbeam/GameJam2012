@@ -55,8 +55,9 @@ function pickTargetInRangeFromTable( self, table, range )
 	return target
 end
 
---- This takes a scene as a parameter as bullets have to be placed inside it
-function fire( scene, shooter, target, bulletDeck, speed )
+--- This takes a gameState as a parameter as bullets have to be placed inside it
+-- Probably the ugliest function out there
+function fire( gameState, shooter, target, bulletDeck, speed )
 	local bullet = {}
 	bullet.prop = MOAIProp2D.new()
 	bullet.prop:setDeck( bulletDeck )
@@ -71,7 +72,7 @@ function fire( scene, shooter, target, bulletDeck, speed )
 	bullet.prop:setRot( degree(angle)+90 )
 	shooter:resetCooldown()
 	bullet.thread = MOAIThread:new()
-	scene.fgLayer:insertProp( bullet.prop )
+	gameState.fgLayer:insertProp( bullet.prop )
 	bullet.thread:run (
 		function ()
 			local x, y = bullet.prop:getLoc()
@@ -80,12 +81,12 @@ function fire( scene, shooter, target, bulletDeck, speed )
 				coroutine.yield()
 				bullet.prop:moveLoc( bullet.dx, bullet.dy )
 				if target.isDead then 
-					scene.fgLayer:removeProp( bullet.prop )
+					gameState.fgLayer:removeProp( bullet.prop )
 					return
 				end
 				x, y = bullet.prop:getLoc()
 			end
-			scene.fgLayer:removeProp( bullet.prop )
+			gameState.fgLayer:removeProp( bullet.prop )
 			target:applyDamage( bullet.damage )
 		end
 	)

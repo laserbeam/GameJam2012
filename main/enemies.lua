@@ -145,6 +145,6 @@ end
 
 local function loadTemplates()
 	templates = loadJSONFile( 'assets/enemies.json' )
-end	
+end
 
 loadTemplates()
