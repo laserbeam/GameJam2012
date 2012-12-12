@@ -63,7 +63,7 @@ end
 function makeSnakeTurret( health, damage, cooldown )
 	turret = makeUnit( health or 20 )
 	turret.maxHealth = turret.health
-	turret.damage = damage or 1
+	turret.damage = damage or 2
 	turret.cooldown = 0
 	turret.maxCooldown = cooldown or .8
 	turret.prop = MOAIProp2D.new()

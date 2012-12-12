@@ -91,6 +91,13 @@ local function loadLevel( state, levelName )
 	e.prop:setLoc( 100, 100 )
 	state.objectLayer:insertProp( e.prop )
 	state.enemies[e] = e
+
+	e = makeSeekerSpawner( 30 )
+	e.prop:setLoc( -300, 200 )
+	state.objectLayer:insertProp( e.prop )
+	state.enemies[e] = e
+	
+
 end
 
 function state:onLoad()
@@ -109,6 +116,7 @@ function state:onLoad()
 	self.bgLayer:insertProp( bg )
 
 	loadLevel( self, '1.json' )
+	self.gameStarted = false
 end
 
 function state:onInput()
@@ -133,6 +141,7 @@ function state:onInput()
 			self.theSnake = makeRunningSnake( self, 10 )
 		end
 		isDrawing = false
+		self.gameStarted = true
 	end
 end
 
@@ -165,14 +174,7 @@ local function updateSnakeTurrets( gameScene, time )
 			gameScene.theSnake.mountedTurrets[i] = nil
 			gameScene.objectLayer:removeProp( turret.prop )
 		else
-			if turret.target then
-				if turret.target.isDead or distanceSq( turret.prop, turret.target.prop ) > turret.range * turret.range then
-					turret.target = nil
-				end
-			end
-			if not turret.target and gameScene.enemies then
-				turret.target = pickTargetInRangeFromTable( turret, gameScene.enemies, turret.range )
-			end
+			turret.target = pickTargetInRangeFromTable( turret, gameScene.enemies, turret.range )
 
 			-- If the turent has cooldown on its weapon, update it
 			if turret.updateCooldown then turret:updateCooldown( time ) end

@@ -12,6 +12,8 @@ function resetCooldown( self )
 	self.cooldown = self.maxCooldown
 end
 
+-- Lot of things have health can take damage and die
+-- This would be sort of a base class for everything
 function makeUnit( health )
 	unit = {}
 	unit.health = health
@@ -35,12 +37,22 @@ function makeUnit( health )
 end
 
 function pickTargetInRangeFromTable( self, table, range )
-	for _, v in pairs( table ) do
-		if distanceSq( self.prop, v.prop ) < range*range then
-			return v
+	range = range or INFINITY
+	local target = self.target
+	if target then
+		if target.isDead or distanceSq( self.prop, target.prop ) > self.range * self.range then
+			target = nil
 		end
 	end
-	return nil
+	if not target and table then
+		for _, v in pairs( table ) do
+			if distanceSq( self.prop, v.prop ) < range*range then
+				return v
+			end
+		end
+	end
+
+	return target
 end
 
 --- This takes a scene as a parameter as bullets have to be placed inside it
@@ -50,7 +62,7 @@ function fire( scene, shooter, target, bulletDeck, speed )
 	bullet.prop:setDeck( bulletDeck )
 	bullet.prop:setLoc( shooter.prop:getLoc() )
 	bullet.damage = shooter.damage
-	local speed = speed or 200
+	local speed = speed or 250
 	local x, y = shooter.prop:getLoc()
 	local angle = angleFromXY( x, y, target.prop:getLoc() )
 	local time = LRStateManager.getTime()
@@ -83,4 +95,5 @@ function rotateToTarget( self, target )
 	local x, y = self.prop:getLoc()
 	local angle = angleFromXY( x, y, target.prop:getLoc() )
 	self.prop:setRot( degree(angle)+90 )
+	return angle
 end
