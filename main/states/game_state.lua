@@ -81,23 +81,33 @@ isDrawing = false
 --- Populates the state with enemies based on some level file
 --- but right now it just adds a couple turrets
 local function loadLevel( state, levelName )
-	state.enemies = {}
-	e = makeEnemyTurret( 20, 7, 3 )
-	e.prop:setLoc( -200, -200 )
-	state.objectLayer:insertProp( e.prop )
-	state.enemies[e] = e
-
-	e = makeEnemyTurret( 20, 7, 3 )
-	e.prop:setLoc( 100, 100 )
-	state.objectLayer:insertProp( e.prop )
-	state.enemies[e] = e
-
-	e = makeSeekerSpawner( 30 )
-	e.prop:setLoc( -300, 200 )
-	state.objectLayer:insertProp( e.prop )
-	state.enemies[e] = e
 	
+	local level = loadJSONFile( 'levels/' .. (levelName or 'level1.json') )
+	state:clearEnemies()
+	for _, template in pairs(level.enemies) do
+		local e = makeTemplateEnemy( template.t )
+		state:insertEnemy( e, template.x, template.y )
+	end
+end
 
+function state:insertEnemy( enemy, x, y )
+	self.enemies[enemy] = enemy
+	self.objectLayer:insertProp( enemy.prop )
+	enemy.prop:setLoc( x, y )
+end
+
+function state:clearEnemies()
+	if self.enemies then
+		for _, enemy in pairs(self.enemies) do
+			self.objectLayer:removeProp( enemy.prop )
+		end
+	end
+	self.enemies = {}
+end
+
+function state:removeEnemy( enemy )
+	self.enemies[enemy] = nil
+	self.objectLayer:removeProp( enemy.prop )
 end
 
 function state:onLoad()
@@ -115,7 +125,7 @@ function state:onLoad()
 	bg:setDeck( gfxQuad )
 	self.bgLayer:insertProp( bg )
 
-	loadLevel( self, '1.json' )
+	loadLevel( self, 'level1.json' )
 	self.gameStarted = false
 end
 
@@ -189,8 +199,7 @@ local function updateEnemies( gameScene, time )
 	for _, e in pairs( gameScene.enemies ) do
 		if e.isDead then
 			print (e, " died... how sad")
-			gameScene.objectLayer:removeProp( e.prop )
-			gameScene.enemies[e] = nil
+			gameScene:removeEnemy(e)
 		else
 			e:update( gameScene, time )
 		end

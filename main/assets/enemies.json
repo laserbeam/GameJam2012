@@ -1,0 +1,26 @@
+{
+	"turret":{
+		"health":20,
+		"scoreValue":50,
+		"goldValue":5,
+		"damage":2.3,
+		"cooldown":1,
+		"range":150
+	},
+	"seeker":{
+		"health":8,
+		"scoreValue":10,
+		"goldValue":1,
+		"damage":0.3,
+		"cooldown":0.3,
+		"range":50,
+		"speed":70
+	},
+	"spawner":{
+		"health":30,
+		"scoreValue":100,
+		"goldValue":15,
+		"cooldown":4.5,
+		"spawnedUnit":"seeker"
+	}
+}

@@ -25,8 +25,10 @@ decks.spawner:setRect ( -24, -24, 24, 24 )
 decks.spawner:setUVRect ( 0, 0, 1, 1 )
 
 
+local templates = {}
+
 -- overloads die so that it gives score and gold
-function makeEnemy( health, scoreValue, goldValue )
+function makeBaseEnemy( health, scoreValue, goldValue )
 	enemy = makeUnit( health )
 	enemy.scoreValue = scoreValue
 	enemy.goldValue = goldValue
@@ -39,28 +41,28 @@ function makeEnemy( health, scoreValue, goldValue )
 	return enemy
 end
 
-function makeEnemyTurret( health, damage, cooldown, range )
-	turret = makeEnemy( health, 50, 10 )
+function makeEnemyTurret( health, scoreValue, goldValue, damage, cooldown, range )
+	turret = makeBaseEnemy( health or 20, scoreValue or 50, goldValue or 10 )
 	
 	turret.prop:setDeck( decks.enemyTurret )
 	-- turret.prop:setScl( 0.4 )
 	turret.damage = damage or 2
 	turret.maxCooldown = cooldown or 1
 	turret.cooldown = 0
-	turret.range = 150
+	turret.range = range or 150
 
 	turret.updateCooldown = updateCooldown
 	turret.resetCooldown = resetCooldown
 	
-	function turret:update( scene, time )
+	function turret:update( gameState, time )
 		self:updateCooldown( time )
-		if scene.theSnake then
-			self.target = pickTargetInRangeFromTable( self, scene.theSnake.mountedTurrets, self.range )
+		if gameState.theSnake then
+			self.target = pickTargetInRangeFromTable( self, gameState.theSnake.mountedTurrets, self.range )
 		end
 		if self.target then
 			rotateToTarget( self, self.target )
 			if self.cooldown <= 0 then
-				fire( scene, self, self.target, decks.bullet )
+				fire( gameState, self, self.target, decks.bullet )
 			end
 		end
 	end
@@ -68,29 +70,29 @@ function makeEnemyTurret( health, damage, cooldown, range )
 	return turret
 end
 
-function makeSmallSeeker( health, damage, cooldown, range )
-	seeker = makeEnemy( health, 10, 1 )
+function makeSmallSeeker( health, scoreValue, goldValue, damage, cooldown, range, speed )
+	seeker = makeBaseEnemy( health or 8, scoreValue or 10, goldValue or 1 )
 	seeker.prop:setDeck( decks.seeker )
 
 	seeker.damage = damage or .3
 	seeker.maxCooldown = cooldown or .3
 	seeker.cooldown = 0
-	seeker.range = 50
-	seeker.speed = 70
+	seeker.range = range or 50
+	seeker.speed = speed or 70
 
 	seeker.updateCooldown = updateCooldown
 	seeker.resetCooldown = resetCooldown
 
-	function seeker:update( scene, time )
+	function seeker:update( gameState, time )
 		self:updateCooldown( time )
-		if scene.theSnake then
-			self.target = pickTargetInRangeFromTable( self, scene.theSnake.mountedTurrets )
+		if gameState.theSnake then
+			self.target = pickTargetInRangeFromTable( self, gameState.theSnake.mountedTurrets )
 		end
 		if self.target then
 			local angle = rotateToTarget( self, self.target )
 			if distanceSq( self.prop, self.target.prop ) <= self.range * self.range then
 				if self.cooldown <= 0 then
-					fire( scene, self, self.target, decks.bullet )
+					fire( gameState, self, self.target, decks.bullet )
 				end
 			else
 				local dx, dy = self.speed*time*cos(angle), self.speed*time*sin(angle)
@@ -102,24 +104,24 @@ function makeSmallSeeker( health, damage, cooldown, range )
 	return seeker
 end
 
-function makeSeekerSpawner( health, cooldown )
-	spawner = makeEnemy( health, 100, 15 )
+function makeUnitSpawner( health, scoreValue, goldValue, spawnedUnit, cooldown )
+	spawner = makeBaseEnemy( health or 30, scoreValue or 100, goldValue or 15 )
 	spawner.prop:setDeck( decks.spawner )
 
 	spawner.maxCooldown = cooldown or 5
 	spawner.cooldown = spawner.maxCooldown
+	spawner.spawnedUnit = spawnedUnit or "seeker"
 
 	spawner.updateCooldown = updateCooldown
 	spawner.resetCooldown = resetCooldown
 	
-	function spawner:update( scene, time )
-		if not scene.gameStarted then return end
+	function spawner:update( gameState, time )
+		if not gameState.gameStarted then return end
 		self:updateCooldown( time )
 		if self.cooldown <= 0 then
-			e = makeSmallSeeker( 10 )
-			e.prop:setLoc( self.prop:getLoc() )
-			scene.enemies[e] = e
-			scene.objectLayer:insertProp( e.prop )
+			print ("SPAWN")
+			e = makeTemplateEnemy( spawnedUnit )
+			gameState:insertEnemy( e, self.prop:getLoc() )
 			self:resetCooldown()
 		end
 	end
@@ -127,3 +129,24 @@ function makeSeekerSpawner( health, cooldown )
 	return spawner
 
 end
+
+function makeTemplateEnemy( name )
+	-- s stands for stats...
+	local s = templates[name]
+	if not s then return nil end
+	local unit = nil
+	if name == 'turret' then
+		unit = makeEnemyTurret( s.health, s.scoreValue, s.goldValue, s.damage, s.cooldown, s.range )
+	elseif name == 'seeker' then
+		unit = makeSmallSeeker( s.health, s.scoreValue, s.goldValue, s.damage, s.cooldown, s.range, s.speed )
+	elseif name == 'spawner' then
+		unit = makeUnitSpawner( s.health, s.scoreValue, s.goldValue, s.spawnedUnit, s.cooldown )
+	end
+	return unit
+end
+
+local function loadTemplates()
+	templates = loadJSONFile( 'assets/enemies.json' )
+end	
+
+loadTemplates()

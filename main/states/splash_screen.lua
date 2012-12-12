@@ -10,7 +10,7 @@ function state:onLoad()
 	gfxQuad1:setRect ( -320, -240, 320, 240 )
 	gfxQuad1:setUVRect ( 0, 0, 1, 1 )
 	gfxQuad2 = MOAIGfxQuad2D.new ()
-	gfxQuad2:setTexture ( "assets/logo_colors.png" )
+	gfxQuad2:setTexture ( "assets/logo_black2.png" )
 	gfxQuad2:setRect ( -240, -240, 240, 240 )
 	gfxQuad2:setUVRect ( 0, 0, 1, 1 )
 
@@ -23,14 +23,14 @@ function state:onLoad()
 	t:run(
 		function() 
 			prop:setColor( 0, 0, 0, 0 )
-			MOAIThread.blockOnAction( prop:seekColor( 1, 1, 1, 1, .5 ) )
+			MOAIThread.blockOnAction( prop:seekColor( 1, 1, 1, 1, .7 ) )
 			MOAIThread.blockOnAction( prop:moveLoc( 0, 0, 2 ) )
-			MOAIThread.blockOnAction( prop:seekColor( 0, 0, 0, 0, .5 ) )
+			MOAIThread.blockOnAction( prop:seekColor( 0, 0, 0, 0, .7 ) )
 			prop:setDeck( gfxQuad2 )
-			self.objectLayer:seekColor( 1, 1, 1, 1 )
-			MOAIThread.blockOnAction( prop:seekColor( 1, 1, 1, 1, .5 ) )
+			-- self.objectLayer:seekColor( 1, 1, 1, 1 )
+			MOAIThread.blockOnAction( prop:seekColor( 1, 1, 1, 1, .7 ) )
 			MOAIThread.blockOnAction( prop:moveLoc( 0, 0, 2 ) )
-			MOAIThread.blockOnAction( prop:seekColor( 0, 0, 0, 0, .5 ) )
+			MOAIThread.blockOnAction( prop:seekColor( 0, 0, 0, 0, .7 ) )
 			
 			self.isDone = true
 		end

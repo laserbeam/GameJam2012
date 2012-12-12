@@ -141,6 +141,14 @@ function makeButton ( texture, w, h )
 	return button
 end
 
+function loadJSONFile( filename )
+	filename = filename or 'assets/enemies.json'
+	log( LRLogger.STATUS, 'Loading enemy templates: ' .. filename )
+	local file = io.open( filename, 'r' ) 
+	local string = file:read( '*all' )
+	return MOAIJsonParser.decode( string )
+end
+
 function makeTextButton ( font, texture, w, h, textY )
 
 	-- make a basic button
