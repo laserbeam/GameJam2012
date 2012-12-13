@@ -40,6 +40,10 @@ function distance( A, B )
 	return sqrt( distanceSq( A, B ) )
 end
 
+function midPoint( ax, ay, bx, by )
+	return (ax+bx)/2, (ay+by)/2
+end
+
 ---------------------------------------------------------------------------
 -- Get the angle of a segment - RADIANS
 -- If bx and by are not specified, it considers the segment 0, 0, ax, ay

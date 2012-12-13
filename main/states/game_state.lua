@@ -99,6 +99,7 @@ local function makePathHolder()
 
 	pathHolder.prop = MOAIProp2D.new()
 	pathHolder.prop:setDeck( scriptDeck )
+	-- pathHolder.prop:setVisible( false )
 
 	return pathHolder
 
@@ -217,8 +218,11 @@ local function updateMovingSnake( gameState, time )
 	if gameState.theSnake then
 		local dist = gameState.theSnake.tDist
 		for i,v in ipairs(gameState.theSnake.joints) do
-			local x, y, angle = gameState.pathHolder:getXYAngleAtDistance(dist)
-			angle = angle or 0
+			local x1, y1 = gameState.pathHolder:getXYAngleAtDistance( dist - gameState.theSnake.jointSpacing/2)
+			local x2, y2 = gameState.pathHolder:getXYAngleAtDistance( dist + gameState.theSnake.jointSpacing/2)
+			local x, y = midPoint( x1, y1, x2, y2 )
+			-- local x, y, angle = gameState.pathHolder:getXYAngleAtDistance(dist)
+			angle = angleFromXY( x1, y1, x2, y2 )
 			v.prop:setLoc( x, y )
 			v.prop:setRot( degree(angle)+90 )
 			if gameState.theSnake.mountedTurrets[i] then

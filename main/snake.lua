@@ -2,28 +2,28 @@ local max = math.max
 
 local decks = {}
 decks.head = MOAIGfxQuad2D.new ()
-decks.head:setTexture ( "assets/moai.png" )
-decks.head:setRect ( -16, -16, 16, 16 )
+decks.head:setTexture ( "assets/Snake_Head2.png" )
+decks.head:setRect ( -16,-19, 16, 13 )
 decks.head:setUVRect ( 0, 0, 1, 1 )
 
 decks.joint = MOAIGfxQuad2D.new ()
-decks.joint:setTexture ( "assets/moai.png" )
-decks.joint:setRect ( -16, -16, 16, 16 )
+decks.joint:setTexture ( "assets/Snake_Joint.png" )
+decks.joint:setRect ( -16, -14, 16, 14 )
 decks.joint:setUVRect ( 0, 0, 1, 1 )
 
 decks.tail = MOAIGfxQuad2D.new ()
-decks.tail:setTexture ( "assets/moai.png" )
+decks.tail:setTexture ( "assets/Snake_Tail.png" )
 decks.tail:setRect ( -16, -16, 16, 16 )
 decks.tail:setUVRect ( 0, 0, 1, 1 )
 
 decks.turret = MOAIGfxQuad2D.new ()
-decks.turret:setTexture ( "assets/gun.png" )
-decks.turret:setRect ( -20, -20, 20, 20 )
+decks.turret:setTexture ( "assets/purple.png" )
+decks.turret:setRect ( -18, -18, 18, 18 )
 decks.turret:setUVRect ( 0, 0, 1, 1 )
 
 decks.healer = MOAIGfxQuad2D.new ()
 decks.healer:setTexture ( "assets/green.png" )
-decks.healer:setRect ( -20, -20, 20, 20 )
+decks.healer:setRect ( -18, -18, 18, 18 )
 decks.healer:setUVRect ( 0, 0, 1, 1 )
 
 decks.bullet = MOAIGfxQuad2D.new ()
@@ -35,6 +35,7 @@ function makeSnakeHead()
 	head = makeUnit( 20 )
 	head.prop = MOAIProp2D.new()
 	head.prop:setDeck( decks.head )
+	head.prop:setPriority( 10 )
 	return head
 end
 
@@ -42,6 +43,7 @@ function makeSnakeJoint()
 	joint = {}
 	joint.prop = MOAIProp2D.new()
 	joint.prop:setDeck( decks.joint )
+	head.prop:setPriority( 9 )
 	return joint
 end
 
@@ -49,6 +51,7 @@ function makeSnakeTail()
 	tail = {}
 	tail.prop = MOAIProp2D.new()
 	tail.prop:setDeck( decks.tail )
+	head.prop:setPriority( 8 )
 	return tail
 end
 
@@ -124,7 +127,7 @@ function makeRunningSnake( state, config )
 	length = config.length
 	theSnake.joints = {}
 	theSnake.mountedTurrets = {}
-	theSnake.jointSpacing = 20
+	theSnake.jointSpacing = 21
 	theSnake.tDist = 0
 	theSnake.speed = 60
 	theSnake.totalLength = theSnake.jointSpacing*(config.length+1)

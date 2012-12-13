@@ -21,6 +21,10 @@ function makeUnit( health )
 	
 	unit.prop = MOAIProp2D.new()
 
+	function unit:getHealthPerc ()
+		return self.health/self.maxHealth
+	end
+
 	function unit:applyDamage( damage ) 
 		self.health = self.health - damage
 		if self.health < 0 then self:die() end
@@ -120,4 +124,23 @@ function rotateToTarget( self, target )
 	local angle = angleFromXY( x, y, target.prop:getLoc() )
 	self.prop:setRot( degree(angle)+90 )
 	return angle
+end
+
+function makeHealthBar( self, unit )
+	local hb = {}
+	hb.w = 36
+	hb.unit = unit
+	local function onDraw( index, xOff, yOff, xFlip, yFlip )
+		MOAIGfxDevice.setPenColor( 0, 0.8, 0.1, 1 )
+		MOAIDraw.fillRect( -w/2, 20, -w/2 + -w/2 + hb.unit:getHealthPerc()*w, 25 )
+		MOAIGfxDevice.setPenColor( 1, 1, 1, 1 )
+		MOAIDraw.drawRect( -w/2, 20, w/2, 25 )
+	end
+
+	hb.prop = MOAIProp2D.new ()
+	hb.prop:setDeck( scriptDeck )
+	hb.prop:setPriority( 1000 )
+
+	return hb
+
 end
