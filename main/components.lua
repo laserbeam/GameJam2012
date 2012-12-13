@@ -69,6 +69,7 @@ function selectTarget( self, table, range, prioritize, desc, force, distinct )
 		if desc then best = -INFINITY end
 		for _, v in pairs( table ) do
 			local d = distanceSq( self.prop, v.prop )
+			if distinct then print( v, self ) end
 			if (not distinct or v ~= self) and d < range*range then
 				if not prioritize then return v
 				elseif prioritize == 'distance' and rank( best, d, desc ) then

@@ -8,12 +8,12 @@ decks.head:setUVRect ( 0, 0, 1, 1 )
 
 decks.joint = MOAIGfxQuad2D.new ()
 decks.joint:setTexture ( "assets/Snake_Joint.png" )
-decks.joint:setRect ( -16, -14, 16, 14 )
+decks.joint:setRect ( -16, -13, 16, 13 )
 decks.joint:setUVRect ( 0, 0, 1, 1 )
 
 decks.tail = MOAIGfxQuad2D.new ()
 decks.tail:setTexture ( "assets/Snake_Tail.png" )
-decks.tail:setRect ( -16, -16, 16, 16 )
+decks.tail:setRect ( -16, -14, 16, 18 )
 decks.tail:setUVRect ( 0, 0, 1, 1 )
 
 decks.turret = MOAIGfxQuad2D.new ()
@@ -32,26 +32,29 @@ decks.bullet:setRect ( -8, -8, 8, 8 )
 decks.bullet:setUVRect ( 0, 0, 1, 1 )
 
 function makeSnakeHead()
-	head = makeUnit( 20 )
+	local head = makeUnit( 20 )
 	head.prop = MOAIProp2D.new()
+	head.prop:setScl( 1.2 )
 	head.prop:setDeck( decks.head )
 	head.prop:setPriority( 10 )
 	return head
 end
 
 function makeSnakeJoint()
-	joint = {}
+	local joint = {}
 	joint.prop = MOAIProp2D.new()
 	joint.prop:setDeck( decks.joint )
-	head.prop:setPriority( 9 )
+	joint.prop:setPriority( 8 )
+	joint.prop:setScl( 1.2 )
 	return joint
 end
 
 function makeSnakeTail()
-	tail = {}
+	local tail = {}
 	tail.prop = MOAIProp2D.new()
 	tail.prop:setDeck( decks.tail )
-	head.prop:setPriority( 8 )
+	tail.prop:setPriority( 9 )
+	tail.prop:setScl( 1.2 )
 	return tail
 end
 
@@ -106,7 +109,7 @@ local function makeHealMount( health, damage, cooldown )
 	function turret:update( gameState, time )
 		self:updateCooldown( time )
 		if self.cooldown <= 0 then
-			self.target = selectTarget( self, gameState.theSnake.mountedTurrets, false, 'health', false, true )
+			self.target = selectTarget( self, gameState.theSnake.mountedTurrets, false, 'health', false, true, true )
 			if self.target then
 				self.target:healDamage( self.damage )
 				self:resetCooldown()
@@ -231,6 +234,9 @@ function makeTemplateMount( name )
 		mount = makeSnakeTurret( s.health, s.damage, s.cooldown, s.range )
 	elseif name == 'healer' then
 		mount = makeHealMount( s.health, s.damage, s.cooldown )
+	end
+	if mount then
+		mount.prop:setPriority( 15 )
 	end
 	return mount
 end

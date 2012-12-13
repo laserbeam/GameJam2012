@@ -42,6 +42,7 @@ local function makePathHolder()
 
 	local onDraw = function ( index, xOff, yOff, xFlip, yFlip )
 		MOAIGfxDevice.setPenColor( 1, 0, 0, 1 )
+		MOAIGfxDevice.setPenWidth( 3 )
 		MOAIDraw.drawLine( pathHolder.pathXY )
 	end
 
@@ -255,6 +256,9 @@ local function updateSnakeTurrets( gameState, time )
 			print (turret, "died... awwwwwwww, not cool")
 			gameState.theSnake.mountedTurrets[i] = nil
 			gameState.objectLayer:removeProp( turret.prop )
+			if turret.healthBar then
+				gameState.fgLayer:removeProp( turret.healthBar.prop )
+			end
 		else
 			turret:update( gameState, time )
 		end
