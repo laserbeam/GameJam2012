@@ -146,17 +146,29 @@ function makeRunningSnake( state, config )
 	
 	for i,v in ipairs( theSnake.joints ) do
 		state.objectLayer:insertProp(v.prop)
+		if v.healthBar then
+			state.fgLayer:insertProp( v.healthBar.prop )
+		end
 	end
 	for i,v in pairs( theSnake.mountedTurrets ) do
 		state.objectLayer:insertProp(v.prop)
+		if v.healthBar then
+			state.fgLayer:insertProp( v.healthBar.prop )
+		end
 	end
 
 	function theSnake:clear()
 		for i,v in ipairs( self.joints ) do
 			state.objectLayer:removeProp( v.prop )
+			if v.healthBar then
+				state.fgLayer:removeProp( v.healthBar.prop )
+			end
 		end
 		for i,v in pairs( self.mountedTurrets ) do
 			state.objectLayer:removeProp( v.prop )
+			if v.healthBar then
+				state.fgLayer:removeProp( v.healthBar.prop )
+			end
 		end
 	end
 

@@ -15,11 +15,12 @@ end
 -- Lot of things have health can take damage and die
 -- This would be sort of a base class for everything
 function makeUnit( health )
-	unit = {}
+	local unit = {}
 	unit.health = health
 	unit.maxHealth = health
 	
 	unit.prop = MOAIProp2D.new()
+	unit.healthBar = makeHealthBar( unit )
 
 	function unit:getHealthPerc ()
 		return self.health/self.maxHealth
@@ -27,10 +28,12 @@ function makeUnit( health )
 
 	function unit:applyDamage( damage ) 
 		self.health = self.health - damage
-		if self.health < 0 then self:die() end
+		self.healthBar.prop:forceUpdate()
+		if self.health <= 0 then self:die() end
 	end
 
 	function unit:healDamage( damage )
+		self.healthBar.prop:forceUpdate()
 		self.health = min( self.health + damage, self.maxHealth )
 	end
 
@@ -126,16 +129,31 @@ function rotateToTarget( self, target )
 	return angle
 end
 
-function makeHealthBar( self, unit )
+local function getHPColor( perc )
+	-- local rr, rg, rb = 0.6, 0, 0
+	-- local gr, gg, gb = 0, 0.6, 0.1
+
+	return (1-perc)*0.8, perc*0.8, perc*0.2, 1
+end
+
+function makeHealthBar( unit )
 	local hb = {}
-	hb.w = 36
+	local w = 36
 	hb.unit = unit
 	local function onDraw( index, xOff, yOff, xFlip, yFlip )
-		MOAIGfxDevice.setPenColor( 0, 0.8, 0.1, 1 )
-		MOAIDraw.fillRect( -w/2, 20, -w/2 + -w/2 + hb.unit:getHealthPerc()*w, 25 )
-		MOAIGfxDevice.setPenColor( 1, 1, 1, 1 )
-		MOAIDraw.drawRect( -w/2, 20, w/2, 25 )
+		local hp = clamp( hb.unit:getHealthPerc(), 0, 1 )
+		local x, y = hb.unit.prop:getLoc()
+		if hp < 1 then
+			MOAIGfxDevice.setPenColor( getHPColor(hp) )
+			MOAIDraw.fillRect( x-w/2, y+20, x-w/2 + hp*w, y+25 )
+			MOAIGfxDevice.setPenColor( 1, 1, 1, 1 )
+			MOAIDraw.drawRect( x-w/2, y+20, x+w/2, y+25 )
+		end
 	end
+
+	scriptDeck = MOAIScriptDeck.new()
+	scriptDeck:setRect( -64, -64, 64, 64 )
+	scriptDeck:setDrawCallback( onDraw )
 
 	hb.prop = MOAIProp2D.new ()
 	hb.prop:setDeck( scriptDeck )

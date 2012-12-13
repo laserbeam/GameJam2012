@@ -8,7 +8,7 @@
 	},
 	"healer":{
 		"health":20,
-		"damage":5,
+		"damage":3,
 		"cooldown":3,
 		"cost":35
 	}

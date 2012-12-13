@@ -123,6 +123,9 @@ function state:insertEnemy( enemy, x, y )
 	self.objectLayer:insertProp( enemy.prop )
 	enemy.prop:setPriority(100)
 	enemy.prop:setLoc( x, y )
+	if enemy.healthBar then
+		self.fgLayer:insertProp( enemy.healthBar.prop )
+	end
 end
 
 function state:clearEnemies()
@@ -136,6 +139,9 @@ end
 
 function state:removeEnemy( enemy )
 	self.enemies[enemy] = nil
+	if enemy.healthBar then
+		self.fgLayer:removeProp( enemy.healthBar.prop )
+	end
 	self.objectLayer:removeProp( enemy.prop )
 end
 
